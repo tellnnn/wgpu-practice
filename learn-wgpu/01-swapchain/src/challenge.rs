@@ -11,6 +11,7 @@ struct State {
     sc_desc: wgpu::SwapChainDescriptor,
     swap_chain: wgpu::SwapChain,
     size: winit::dpi::PhysicalSize<u32>,
+    clear_color: wgpu::Color,
 }
 
 impl State {
@@ -45,6 +46,8 @@ impl State {
         };
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
+        let clear_color = wgpu::Color::BLACK;
+
         Self {
             size,
             surface,
@@ -52,6 +55,7 @@ impl State {
             queue,
             sc_desc,
             swap_chain,
+            clear_color,
         }
     }
 
@@ -62,8 +66,19 @@ impl State {
         self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
     }
 
-    fn input(&mut self, _event: &WindowEvent) -> bool {
-        false
+    fn input(&mut self, event: &WindowEvent) -> bool {
+        match event {
+            WindowEvent::CursorMoved { position, .. } => {
+                self.clear_color = wgpu::Color {
+                    r: position.x as f64 / self.size.width as f64,
+                    g: position.y as f64 / self.size.height as f64,
+                    b: 1.0,
+                    a: 1.0,
+                };
+                true
+            }
+            _ => false,
+        }
     }
 
     fn update(&mut self) {
@@ -88,12 +103,7 @@ impl State {
                         view: &frame.view,
                         resolve_target: None,
                         ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color {
-                                r: 0.1,
-                                g: 0.2,
-                                b: 0.3,
-                                a: 1.0,
-                            }),
+                            load: wgpu::LoadOp::Clear(self.clear_color),
                             store: true,
                         }
                     }
